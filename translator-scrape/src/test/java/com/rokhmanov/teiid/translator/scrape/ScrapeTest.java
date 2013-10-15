@@ -117,9 +117,10 @@ public class ScrapeTest
     @Test
     public void testScrapeWSTranslator() throws Exception
     {
-        final String sql = "select h.id, h.tagname, h.text, h.attributes, h.classnames, h.script_data, h.inner_html "
-                + "from (call wsdata.invokeHttp(action=>'GET',endpoint=>'http://www.bing.com/search?q=jboss+teiid')) x, "
-                            + "TABLE(call scrapedata.scrapeWS(to_chars(x.result, 'UTF-8'), 'a[href]')) h";
+        final String sql = "SELECT h.id, h.tagname, h.text, h.attributes, h.classnames, h.script_data, h.inner_html "
+                + "FROM (call wsdata.invokeHttp(action=>'GET',endpoint=>'http://www.bing.com/search?q=jboss+teiid')) x, "
+                + "TABLE(call scrapedata.scrapeWS(to_chars(x.result, 'UTF-8'), 'a[href]')) h "
+                + "WHERE upper(h.text) like '%TEIID%' ";
         
         List<String> results = execute(sql);        
         
