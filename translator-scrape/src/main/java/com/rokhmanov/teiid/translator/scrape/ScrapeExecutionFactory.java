@@ -37,7 +37,15 @@ public class ScrapeExecutionFactory
                                                        RuntimeMetadata metadata,
                                                        Object connection) throws TranslatorException
     {
-        return new ScrapeExecution(command);
+        if (command.getProcedureName().equalsIgnoreCase("scrape"))
+        {
+            return new ScrapeExecution(command);
+        }
+        if (command.getProcedureName().equalsIgnoreCase("scrapeWS"))
+        {
+            return new ScrapeWSExecution(command);
+        }
+        throw new TranslatorException(command.toString());
     }
 
     @Override
@@ -53,6 +61,17 @@ public class ScrapeExecutionFactory
         metadataFactory.addProcedureResultSetColumn("classnames", TypeFacility.getDataTypeNameFromSQLType(Types.VARCHAR), scrapResults);
         metadataFactory.addProcedureResultSetColumn("script_data", TypeFacility.getDataTypeNameFromSQLType(Types.VARCHAR), scrapResults);
         metadataFactory.addProcedureResultSetColumn("inner_html", TypeFacility.getDataTypeNameFromSQLType(Types.VARCHAR), scrapResults);
+
+        final Procedure scrapResultsWS = metadataFactory.addProcedure("scrapeWS");
+        metadataFactory.addProcedureParameter("content", TypeFacility.getDataTypeNameFromSQLType(Types.CLOB), Type.In, scrapResultsWS);
+        metadataFactory.addProcedureParameter("selector", TypeFacility.getDataTypeNameFromSQLType(Types.VARCHAR), Type.In, scrapResultsWS);
+        metadataFactory.addProcedureResultSetColumn("id", TypeFacility.getDataTypeNameFromSQLType(Types.VARCHAR), scrapResultsWS);
+        metadataFactory.addProcedureResultSetColumn("tagname", TypeFacility.getDataTypeNameFromSQLType(Types.VARCHAR), scrapResultsWS);
+        metadataFactory.addProcedureResultSetColumn("text", TypeFacility.getDataTypeNameFromSQLType(Types.VARCHAR), scrapResultsWS);
+        metadataFactory.addProcedureResultSetColumn("attributes", TypeFacility.getDataTypeNameFromSQLType(Types.VARCHAR), scrapResultsWS);
+        metadataFactory.addProcedureResultSetColumn("classnames", TypeFacility.getDataTypeNameFromSQLType(Types.VARCHAR), scrapResultsWS);
+        metadataFactory.addProcedureResultSetColumn("script_data", TypeFacility.getDataTypeNameFromSQLType(Types.VARCHAR), scrapResultsWS);
+        metadataFactory.addProcedureResultSetColumn("inner_html", TypeFacility.getDataTypeNameFromSQLType(Types.VARCHAR), scrapResultsWS);
     }
 
 }

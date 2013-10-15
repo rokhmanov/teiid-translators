@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import javax.resource.cci.ConnectionFactory;
+
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
@@ -20,8 +22,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.teiid.adminapi.impl.ModelMetaData;
 import org.teiid.jdbc.TeiidDriver;
+import org.teiid.resource.adapter.ws.WSManagedConnectionFactory;
 import org.teiid.runtime.EmbeddedConfiguration;
 import org.teiid.runtime.EmbeddedServer;
+import org.teiid.translator.ws.WSExecutionFactory;
 
 public class ScrapeTest 
 {
@@ -35,8 +39,7 @@ public class ScrapeTest
         final PatternLayout layout = new PatternLayout();
         logger.addAppender(new ConsoleAppender(layout));
     }
-    
-    
+        
     @BeforeClass
     public static void init() throws Exception
     {
@@ -44,14 +47,22 @@ public class ScrapeTest
         ec.setUseDisk(true);                
         server = new EmbeddedServer();
         server.start(ec);
-        server.addTranslator(new ScrapeExecutionFactory());
 
+        server.addTranslator(ScrapeExecutionFactory.class);
         final ModelMetaData scrapeModel = new ModelMetaData();
         scrapeModel.setName("scrapedata");
         scrapeModel.setSchemaSourceType("native");
         scrapeModel.addSourceMapping("dummy", "web-scrape", null);
 
-        server.deployVDB("test", scrapeModel);
+        final ConnectionFactory cf = new WSManagedConnectionFactory().createConnectionFactory();
+        server.addConnectionFactoryProvider("source-ws", new EmbeddedServer.SimpleConnectionFactoryProvider<ConnectionFactory>(cf));
+        server.addTranslator(WSExecutionFactory.class);
+        final ModelMetaData wsModel = new ModelMetaData();
+        wsModel.setName("wsdata");
+        wsModel.setSchemaSourceType("native");
+        wsModel.addSourceMapping("ws-connector", "ws", "source-ws");
+        
+        server.deployVDB("test", scrapeModel, wsModel);
     }
   
     
@@ -82,7 +93,7 @@ public class ScrapeTest
 
     
     @Test
-    public void testBingScrape() throws Exception
+    public void testScrapeTranslator() throws Exception
     {
         final String sql = "select id, tagname, text, attributes,classnames, script_data, inner_html from ("
                 + "call scrapedata.scrape('http://www.bing.com/search?q=jboss+teiid','a[href]')"
@@ -90,9 +101,31 @@ public class ScrapeTest
         
         List<String> results = execute(sql);
         logger.debug("Returned results:" + Arrays.toString(results.toArray()));
-        assertTrue("Search results returned from Bing", results.size() > 0);
+        assertTrue("Search results returned from scrape stored procedure", results.size() > 0);
     }      
     
+    @Test
+    public void testWSTranslator() throws Exception
+    {
+        final String sql = "select to_chars(x.result, 'UTF-8') from (call wsdata.invokeHttp(action=>'GET',endpoint=>'http://www.bing.com/search?q=jboss+teiid')) as x";
+        List<String> results = execute(sql);
+        logger.debug("Returned results:" + Arrays.toString(results.toArray()));
+        assertTrue("Search results returned by ws translator", results.size() > 0);
+    }
+    
+        
+    @Test
+    public void testScrapeWSTranslator() throws Exception
+    {
+        final String sql = "select h.id, h.tagname, h.text, h.attributes, h.classnames, h.script_data, h.inner_html "
+                + "from (call wsdata.invokeHttp(action=>'GET',endpoint=>'http://www.bing.com/search?q=jboss+teiid')) x, "
+                            + "TABLE(call scrapedata.scrapeWS(to_chars(x.result, 'UTF-8'), 'a[href]')) h";
+        
+        List<String> results = execute(sql);        
+        
+        logger.debug("Returned results:" + Arrays.toString(results.toArray()));
+        assertTrue("Search results returned by scrape stored procedure and ws translator", results.size() > 0);
+    }
     
     private List<String> execute(String sql) throws Exception
     {
