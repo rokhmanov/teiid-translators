@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<connector version="1.5">
+
+   <vendor-name>Andriy Rokhmanov</vendor-name>
+   <eis-type>Teiid EBay Connector</eis-type>
+   <resourceadapter-version>1.0</resourceadapter-version>
+   <license>
+      <description>
+      </description>
+      <license-required>true</license-required>
+   </license>
+   <resourceadapter>
+      <resourceadapter-class>com.rokhmanov.teiid.resource.adapter.ebay.EBayResourceAdapter</resourceadapter-class>
+
+      <outbound-resourceadapter>
+         <connection-definition>
+            <managedconnectionfactory-class>com.rokhmanov.teiid.resource.adapter.ebay.EBayManagedConnectionFactory</managedconnectionfactory-class>
+
+            <config-property>
+               <description>{$display:"Developer Key", $description:"EBay Developer API Access Key", $required:"true"}</description>
+               <config-property-name>DeveloperKey</config-property-name>
+               <config-property-type>java.lang.String</config-property-type>
+            </config-property>
+                        
+            <connectionfactory-interface>javax.resource.cci.ConnectionFactory</connectionfactory-interface>
+            <connectionfactory-impl-class>org.teiid.resource.spi.WrappedConnectionFactory</connectionfactory-impl-class>
+            <connection-interface>javax.resource.cci.Connection</connection-interface>
+            <connection-impl-class>org.teiid.resource.spi.WrappedConnection</connection-impl-class>
+
+         </connection-definition>
+         
+         <transaction-support>NoTransaction</transaction-support>
+        
+        <authentication-mechanism>
+            <authentication-mechanism-type>BasicPassword</authentication-mechanism-type>
+            <credential-interface>javax.resource.spi.security.PasswordCredential</credential-interface>
+        </authentication-mechanism>
+        <reauthentication-support>false</reauthentication-support>
+      </outbound-resourceadapter>
+   </resourceadapter>
+</connector>
